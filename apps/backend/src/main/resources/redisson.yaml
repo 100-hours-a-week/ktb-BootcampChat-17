@@ -1,0 +1,7 @@
+singleServerConfig:
+  address: "redis://localhost:6379"
+  connectionMinimumIdleSize: 10
+  connectionPoolSize: 64
+threads: 4
+nettyThreads: 4
+codec: !<org.redisson.codec.LZ4Codec> {}
