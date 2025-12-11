@@ -47,11 +47,11 @@ public class SocketIOConfig {
         config.setPort(port);
         
         var socketConfig = new SocketConfig();
-        socketConfig.setReuseAddress(true);
+        socketConfig.setReuseAddress(false);
         socketConfig.setTcpNoDelay(true);
         socketConfig.setAcceptBackLog(512);
-        socketConfig.setTcpSendBufferSize(16384);
-        socketConfig.setTcpReceiveBufferSize(16384);
+        socketConfig.setTcpSendBufferSize(4096);
+        socketConfig.setTcpReceiveBufferSize(4096);
         config.setSocketConfig(socketConfig);
 
         config.setOrigin("*");
@@ -61,7 +61,7 @@ public class SocketIOConfig {
         config.setPingInterval(25000);
         config.setUpgradeTimeout(10000);
         config.setBossThreads(1);
-        config.setWorkerThreads(8);
+        config.setWorkerThreads(32);
 
         config.setJsonSupport(new JacksonJsonSupport(new JavaTimeModule()));
         config.setStoreFactory(new RedissonStoreFactory(redissonClient));

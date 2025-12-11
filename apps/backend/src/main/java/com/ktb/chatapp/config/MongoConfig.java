@@ -47,9 +47,9 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
                 //커넥션풀 세팅
                 .applyToConnectionPoolSettings(builder ->
                         builder
-                                .maxSize(20)
-                                .minSize(2)
-                                .maxWaitTime(3000, TimeUnit.MILLISECONDS)
+                                .maxSize(100)
+                                .minSize(10)
+                                .maxWaitTime(5000, TimeUnit.MILLISECONDS)
                                 .maxConnectionLifeTime(60000, TimeUnit.MILLISECONDS)
                                 .maxConnectionIdleTime(30000, TimeUnit.MILLISECONDS)
                                 .maintenanceFrequency(10000, TimeUnit.MILLISECONDS)
@@ -58,8 +58,8 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
 
                 .applyToSocketSettings(builder ->
                         builder
-                                .connectTimeout(5000, TimeUnit.MILLISECONDS)  // 연결: 5초
-                                .readTimeout(30000, TimeUnit.MILLISECONDS)      // 읽기: 30초 (AI 응답 대기)
+                                .connectTimeout(10000, TimeUnit.MILLISECONDS)  // 연결: 5초
+                                .readTimeout(45000, TimeUnit.MILLISECONDS)      // 읽기: 30초 (AI 응답 대기)
                 )
 
                 // 클러스터 세팅
@@ -71,8 +71,8 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
                 // 서버 모니터링
                 .applyToServerSettings(builder ->
                         builder
-                                .heartbeatFrequency(15000, TimeUnit.MILLISECONDS)
-                                .minHeartbeatFrequency(1000, TimeUnit.MILLISECONDS)
+                                .heartbeatFrequency(10000, TimeUnit.MILLISECONDS)
+                                .minHeartbeatFrequency(500, TimeUnit.MILLISECONDS)
                 )
 
 
@@ -83,7 +83,7 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
 
                 .build();
 
-        log.info("MongoDB Client initialized with connection pool [max: 20, min: 2]");
+        log.info("MongoDB Client initialized with connection pool [max: 100, min: 10]");
         return MongoClients.create(settings);
     }
 
