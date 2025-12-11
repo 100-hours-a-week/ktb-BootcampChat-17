@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,7 +45,14 @@ public class UserService {
      * 현재 사용자 프로필 조회
      * @param email 사용자 이메일
      */
+    @Cacheable(
+            cacheNames = "userCache",
+            key = "'email:' + #email.toLowerCase()"
+    )
     public UserResponse getCurrentUserProfile(String email) {
+        // ✅ 이 로그가 찍힌다는 것은 "캐시를 못 쓰고 DB를 직접 조회했다"는 의미입니다.
+        log.info("[UserService] DB에서 현재 사용자 프로필 조회 - email={}", email);
+
         User user = userRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
         return UserResponse.from(user);
@@ -53,7 +62,14 @@ public class UserService {
      * 사용자 프로필 업데이트
      * @param email 사용자 이메일
      */
+    @CacheEvict(
+            cacheNames = "userCache",
+            allEntries = true
+    )
     public UserResponse updateUserProfile(String email, UpdateProfileRequest request) {
+        log.info("[UserService] 사용자 프로필 업데이트 요청 - email={}", email);
+        log.info("[UserService] userCache 전체 삭제 (프로필 수정)");
+
         User user = userRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
@@ -71,7 +87,14 @@ public class UserService {
      * 프로필 이미지 업로드
      * @param email 사용자 이메일
      */
+    @CacheEvict(
+            cacheNames = "userCache",
+            allEntries = true
+    )
     public ProfileImageResponse uploadProfileImage(String email, MultipartFile file) {
+        log.info("[UserService] 프로필 이미지 업로드 요청 - email={}", email);
+        log.info("[UserService] userCache 전체 삭제 (프로필 이미지 업로드)");
+
         // 사용자 조회
         User user = userRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
@@ -104,7 +127,14 @@ public class UserService {
     /**
      * 특정 사용자 프로필 조회
      */
+    @Cacheable(
+            cacheNames = "userCache",
+            key = "'id:' + #userId"
+    )
     public UserResponse getUserProfile(String userId) {
+        // ✅ 이 로그가 찍힌다는 것은 "캐시를 못 쓰고 DB를 직접 조회했다"는 의미입니다.
+        log.info("[UserService] DB에서 특정 사용자 프로필 조회 - userId={}", userId);
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
@@ -167,7 +197,14 @@ public class UserService {
      * 프로필 이미지 삭제
      * @param email 사용자 이메일
      */
+    @CacheEvict(
+            cacheNames = "userCache",
+            allEntries = true
+    )
     public void deleteProfileImage(String email) {
+        log.info("[UserService] 프로필 이미지 삭제 요청 - email={}", email);
+        log.info("[UserService] userCache 전체 삭제 (프로필 이미지 삭제)");
+
         User user = userRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
@@ -184,7 +221,14 @@ public class UserService {
      * 회원 탈퇴 처리
      * @param email 사용자 이메일
      */
+    @CacheEvict(
+            cacheNames = "userCache",
+            allEntries = true
+    )
     public void deleteUserAccount(String email) {
+        log.info("[UserService] 회원 탈퇴 요청 - email={}", email);
+        log.info("[UserService] userCache 전체 삭제 (회원 탈퇴)");
+
         User user = userRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 

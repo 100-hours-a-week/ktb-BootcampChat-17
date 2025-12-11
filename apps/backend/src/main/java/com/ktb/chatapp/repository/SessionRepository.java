@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-@Repository
+@Repository("mongoSessionRepository")
 public interface SessionRepository extends MongoRepository<Session, String> {
     Optional<Session> findByUserId(String userId);
     void deleteByUserId(String userId);

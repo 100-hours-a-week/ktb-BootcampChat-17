@@ -14,6 +14,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,8 +34,21 @@ public class RoomService {
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
 
+    // ✅ 캐싱 적용: 채팅방 목록 조회 (1분 TTL)
+    @Cacheable(
+            cacheNames = "roomMessageCountCache",
+            key = "'list:' + #pageRequest.page + ':' + #pageRequest.pageSize + ':' + #pageRequest.sortField + ':' + #pageRequest.sortOrder + ':' + (#pageRequest.search != null ? #pageRequest.search : '')"
+    )
     public RoomsResponse getAllRoomsWithPagination(
             com.ktb.chatapp.dto.PageRequest pageRequest, String name) {
+
+        log.debug("🔥🔥🔥 getAllRoomsWithPagination - DB 조회 시작 (CACHE MISS)");
+        log.info("📊 Cache Key: list:{}:{}:{}:{}:{}",
+                pageRequest.getPage(),
+                pageRequest.getPageSize(),
+                pageRequest.getSortField(),
+                pageRequest.getSortOrder(),
+                pageRequest.getSearch() != null ? pageRequest.getSearch() : "");
 
         try {
             long startTime = System.currentTimeMillis();
@@ -105,7 +120,7 @@ public class RoomService {
                     .collect(Collectors.toList());
 
             long endTime = System.currentTimeMillis();
-            log.info("Rooms loaded in {}ms (total: {}, users: {}, message counts: {})",
+            log.info("✅ Rooms loaded in {}ms (total: {}, users: {}, message counts: {})",
                     endTime - startTime, rooms.size(), userMap.size(), messageCountMap.size());
 
             // 메타데이터 생성
@@ -122,11 +137,14 @@ public class RoomService {
                             .build())
                     .build();
 
-            return RoomsResponse.builder()
+            RoomsResponse response = RoomsResponse.builder()
                     .success(true)
                     .data(roomResponses)
                     .metadata(metadata)
                     .build();
+
+            log.info("💾 Returning RoomsResponse to be cached");
+            return response;
 
         } catch (Exception e) {
             log.error("방 목록 조회 에러", e);
@@ -139,7 +157,6 @@ public class RoomService {
 
     /**
      * ✅ User Bulk 조회 헬퍼 메서드
-     * N번의 findById() 대신 1번의 findAllById()로 조회
      */
     private Map<String, User> getUserMapBulk(Set<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
@@ -158,7 +175,6 @@ public class RoomService {
 
     /**
      * ✅ 메시지 수 Bulk 조회 헬퍼 메서드
-     * N번의 countRecentMessagesByRoomId() 대신 1번의 Aggregation으로 조회
      */
     private Map<String, Long> getMessageCountMapBulk(List<String> roomIds) {
         if (roomIds == null || roomIds.isEmpty()) {
@@ -182,8 +198,7 @@ public class RoomService {
     }
 
     /**
-     * ✅ 최적화된 RoomResponse 매핑 (추가 쿼리 없음)
-     * userMap과 messageCountMap을 사용하여 O(1) 조회
+     * ✅ 최적화된 RoomResponse 매핑
      */
     private RoomResponse mapToRoomResponseOptimized(
             Room room,
@@ -193,19 +208,16 @@ public class RoomService {
 
         if (room == null) return null;
 
-        // Creator 조회 (Map에서 O(1))
         User creator = null;
         if (room.getCreator() != null) {
             creator = userMap.get(room.getCreator());
         }
 
-        // Participants 조회 (Map에서 O(1) × N)
         List<User> participants = room.getParticipantIds().stream()
                 .map(userMap::get)
                 .filter(Objects::nonNull)
                 .toList();
 
-        // 메시지 수 조회 (Map에서 O(1))
         long recentMessageCount = messageCountMap.getOrDefault(room.getId(), 0L);
 
         return RoomResponse.builder()
@@ -274,7 +286,10 @@ public class RoomService {
         }
     }
 
+    @CacheEvict(cacheNames = "roomMessageCountCache", allEntries = true)
     public Room createRoom(CreateRoomRequest createRoomRequest, String name) {
+        log.info("🗑️ Cache evicted - createRoom");
+
         User creator = userRepository.findByEmail(name)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + name));
 
@@ -291,7 +306,6 @@ public class RoomService {
         Room savedRoom = roomRepository.save(room);
 
         try {
-            // ✅ 이벤트 발행 시에도 최적화된 매핑 사용
             Map<String, User> userMap = getUserMapBulk(Set.of(creator.getId()));
             Map<String, Long> messageCountMap = new HashMap<>();
             RoomResponse roomResponse = mapToRoomResponseOptimized(
@@ -304,11 +318,19 @@ public class RoomService {
         return savedRoom;
     }
 
+    @Cacheable(
+            cacheNames = "roomMessageCountCache",
+            key = "'room:' + #roomId"
+    )
     public Optional<Room> findRoomById(String roomId) {
+        log.debug("🔥 findRoomById - DB 조회 (CACHE MISS): {}", roomId);
         return roomRepository.findById(roomId);
     }
 
+    @CacheEvict(cacheNames = "roomMessageCountCache", allEntries = true)
     public Room joinRoom(String roomId, String password, String name) {
+        log.info("🗑️ Cache evicted - joinRoom");
+
         Optional<Room> roomOpt = roomRepository.findById(roomId);
         if (roomOpt.isEmpty()) {
             return null;
@@ -330,7 +352,6 @@ public class RoomService {
         }
 
         try {
-            // ✅ 이벤트 발행 시에도 최적화된 매핑 사용
             Set<String> allUserIds = new HashSet<>(room.getParticipantIds());
             if (room.getCreator() != null) {
                 allUserIds.add(room.getCreator());

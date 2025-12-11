@@ -2,6 +2,7 @@ package com.ktb.chatapp.dto;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,7 +19,10 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoomResponse {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class RoomResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     @Schema(description = "채팅방 ID", example = "60d5ec49f1b2c8b9e8c4f2a1")
     @JsonProperty("_id")
     private String id;
@@ -52,6 +57,10 @@ public class RoomResponse {
     @Schema(description = "채팅방 생성 시간 (ISO 8601 형식)", example = "2025-11-18T12:34:56.789Z")
     @JsonGetter("createdAt")
     public String getCreatedAt() {
+        // ✅ null 체크 추가
+        if (createdAtDateTime == null) {
+            return null;
+        }
         return createdAtDateTime
                 .atZone(java.time.ZoneId.systemDefault())
                 .toInstant()

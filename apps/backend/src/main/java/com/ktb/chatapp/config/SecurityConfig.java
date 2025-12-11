@@ -74,7 +74,9 @@ public class SecurityConfig {
                                 "/api/v3/api-docs/**",
                                 "/api/swagger-ui/**",
                                 "/api/swagger-ui.html",
-                                "/api/docs/**"
+                                "/api/docs/**",
+                                "/api/rooms",              // ✅ 캐시 테스트용 추가
+                                "/api/rooms/test-cache"    // ✅ 캐시 테스트용 추가
                         ).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
@@ -91,7 +93,7 @@ public class SecurityConfig {
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter)
                         )
                 );
-        
+
         return http.build();
     }
 
