@@ -1,1 +1,4 @@
 uploads/*
+# Environment variables
+.env
+*.env
