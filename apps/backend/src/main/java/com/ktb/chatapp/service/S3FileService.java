@@ -129,7 +129,7 @@ public class S3FileService implements FileService {
             log.info("S3 파일 저장 완료: {}", key);
 
             // URL 반환
-            return "/api/uploads/" + key;
+            return "https://d2dndgtcx55jwp.cloudfront.net/" + key;
 
         } catch (IOException e) {
             log.error("파일 저장 실패: {}", e.getMessage(), e);
