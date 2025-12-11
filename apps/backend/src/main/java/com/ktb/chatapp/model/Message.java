@@ -9,7 +9,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -30,8 +29,9 @@ import java.util.Set;
 @AllArgsConstructor
 @Document(collection = "messages")
 @CompoundIndexes({
-    @CompoundIndex(name = "readers_userId_idx", def = "{'readers.userId': 1}"),
-    @CompoundIndex(name = "room_isDeleted_timestamp_idx", def = "{'room': 1, 'isDeleted': 1, 'timestamp': -1}")
+        @CompoundIndex(name = "readers_userId_idx", def = "{'readers.userId': 1}")
+        // 인덱스 충돌 방지를 위해 주석 처리
+        //@CompoundIndex(name = "room_isDeleted_timestamp_idx", def = "{'room': 1, 'isDeleted': 1, 'timestamp': -1}")
 })
 public class Message {
 
@@ -39,7 +39,8 @@ public class Message {
     private String id;
 
     // Mongo 문서 필드명 "room" 사용
-    @Indexed
+    // ❌ @Indexed 주석 처리
+    //@Indexed
     @Field("room")
     private String roomId;
 
@@ -75,7 +76,8 @@ public class Message {
     @Builder.Default
     private Map<String, Object> metadata = new HashMap<>();
 
-    @Indexed
+    // ❌ @Indexed 주석 처리
+    //@Indexed
     @Builder.Default
     private Boolean isDeleted = false;
 
@@ -88,12 +90,11 @@ public class Message {
         private String userId;
         private LocalDateTime readAt;
     }
-    
-    
+
     public long toTimestampMillis() {
         return timestamp.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
-    
+
     /**
      * 메시지에 리액션을 추가한다.
      * Tell, Don't Ask 원칙을 준수하여 도메인 로직을 캡슐화한다.
@@ -107,12 +108,12 @@ public class Message {
             this.reactions = new HashMap<>();
         }
         Set<String> userReactions = this.reactions.computeIfAbsent(
-            reaction,
-            key -> new java.util.HashSet<>()
+                reaction,
+                key -> new java.util.HashSet<>()
         );
         return userReactions.add(userId);
     }
-    
+
     /**
      * 메시지에서 리액션을 제거한다.
      *
@@ -133,7 +134,7 @@ public class Message {
         }
         return false;
     }
-    
+
     /**
      * 파일 메타데이터를 메시지에 첨부한다.
      *
