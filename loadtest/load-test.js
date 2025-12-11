@@ -7,6 +7,105 @@ const { hideBin } = require('yargs/helpers');
 const chalk = require('chalk');
 const Table = require('cli-table3');
 
+const client = require('prom-client');
+const express = require('express');
+
+// Prometheus Registry
+const register = new client.Registry();
+
+// 기본 Node 메트릭 수집 (CPU, 메모리 등)
+client.collectDefaultMetrics({ register });
+
+// === 커스텀 메트릭 정의 ===
+
+// 유저 관련
+const usersCreatedGauge = new client.Gauge({
+  name: 'ktb_users_created',
+  help: 'Number of users created/logged in for KTB Chat load test',
+});
+const usersConnectedGauge = new client.Gauge({
+  name: 'ktb_users_connected',
+  help: 'Number of users currently connected via Socket.IO',
+});
+const usersDisconnectedCounter = new client.Counter({
+  name: 'ktb_users_disconnected_total',
+  help: 'Total number of users disconnected during the test',
+});
+
+// 메시지 관련
+const messagesSentCounter = new client.Counter({
+  name: 'ktb_messages_sent_total',
+  help: 'Total number of messages sent',
+});
+const messagesReceivedCounter = new client.Counter({
+  name: 'ktb_messages_received_total',
+  help: 'Total number of messages received (broadcast)',
+});
+const messagesReadCounter = new client.Counter({
+  name: 'ktb_messages_marked_read_total',
+  help: 'Total number of messages marked as read',
+});
+const readAckCounter = new client.Counter({
+  name: 'ktb_read_acks_received_total',
+  help: 'Total number of read ack events received from server',
+});
+
+// 지연시간 / 연결시간 히스토그램 (ms)
+const messageLatencyHistogram = new client.Histogram({
+  name: 'ktb_message_latency_ms',
+  help: 'Message send latency in milliseconds',
+  buckets: [10, 50, 100, 200, 500, 1000, 2000, 5000],
+});
+const connectionTimeHistogram = new client.Histogram({
+  name: 'ktb_connection_time_ms',
+  help: 'Socket connection time in milliseconds',
+  buckets: [10, 50, 100, 200, 500, 1000, 2000, 5000],
+});
+
+// 에러 관련
+const authErrorsCounter = new client.Counter({
+  name: 'ktb_auth_errors_total',
+  help: 'Total number of auth/login/register errors',
+});
+const connectionErrorsCounter = new client.Counter({
+  name: 'ktb_connection_errors_total',
+  help: 'Total number of connection/joinRoom errors',
+});
+const messageErrorsCounter = new client.Counter({
+  name: 'ktb_message_errors_total',
+  help: 'Total number of message send/receive errors',
+});
+
+// Registry에 등록
+register.registerMetric(usersCreatedGauge);
+register.registerMetric(usersConnectedGauge);
+register.registerMetric(usersDisconnectedCounter);
+register.registerMetric(messagesSentCounter);
+register.registerMetric(messagesReceivedCounter);
+register.registerMetric(messagesReadCounter);
+register.registerMetric(readAckCounter);
+register.registerMetric(messageLatencyHistogram);
+register.registerMetric(connectionTimeHistogram);
+register.registerMetric(authErrorsCounter);
+register.registerMetric(connectionErrorsCounter);
+register.registerMetric(messageErrorsCounter);
+
+// /metrics 노출용 서버
+const app = express();
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (err) {
+    res.status(500).end(err.toString());
+  }
+});
+
+const METRICS_PORT = process.env.METRICS_PORT || 9100;
+app.listen(METRICS_PORT, () => {
+  console.log(`✅ Prometheus metrics server on http://${METRICS_PORT}/metrics`);
+});
+
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
   .option('users', {
@@ -36,7 +135,7 @@ const argv = yargs(hideBin(process.argv))
   .option('api-url', {
     description: 'Backend REST API URL',
     type: 'string',
-    default: 'http://localhost:5001'
+    default: 'https://chat.goorm-ktb-017.goorm.team/'
   })
   .option('socket-url', {
     description: 'Socket.IO server URL',
