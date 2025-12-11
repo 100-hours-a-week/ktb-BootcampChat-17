@@ -4,7 +4,6 @@ import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.LZ4Codec;
 import org.redisson.config.Config;
-import org.redisson.config.ReplicatedServersConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,20 +11,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RedissonConfig {
 
-    @Value("${REDIS_MASTER_HOST:localhost}")  // ✅ 기본값 추가
-    private String masterHost;
+    @Value("${REDIS_HOST:localhost}")
+    private String redisHost;
 
-    @Value("${REDIS_MASTER_PORT:6379}")       // ✅ 기본값 추가
-    private int masterPort;
-
-    @Value("${REDIS_SLAVE_HOST:localhost}")   // ✅ 기본값 추가
-    private String slaveHost;
-
-    @Value("${REDIS_SLAVE_HOST2:localhost}")  // ✅ 기본값 추가
-    private String slaveHost2;
-
-    @Value("${REDIS_SLAVE_PORT:6379}")        // ✅ 기본값 추가
-    private int slavePort;
+    @Value("${REDIS_PORT:6379}")
+    private int redisPort;
 
     @Value("${REDIS_THREADS:4}")
     private int threads;
@@ -37,16 +27,11 @@ public class RedissonConfig {
     public RedissonClient redissonClient() {
         Config config = new Config();
 
-        ReplicatedServersConfig replicated = config.useReplicatedServers()
-                .addNodeAddress("redis://43.201.34.87:6379" )
-                .addNodeAddress("redis://43.203.193.52:6379")
-                .addNodeAddress("redis://3.34.50.68:6379")
-                .setDatabase(0)
-                .setMasterConnectionPoolSize(16)
-                .setMasterConnectionMinimumIdleSize(4)
-                .setSlaveConnectionPoolSize(16)
-                .setSlaveConnectionMinimumIdleSize(4)
-                .setScanInterval(2000);
+        config.useSingleServer()
+                .setAddress("redis://43.201.34.87:6379")
+                .setConnectionPoolSize(32)
+                .setConnectionMinimumIdleSize(4)
+                .setDatabase(0);
 
         config.setThreads(threads);
         config.setNettyThreads(nettyThreads);
