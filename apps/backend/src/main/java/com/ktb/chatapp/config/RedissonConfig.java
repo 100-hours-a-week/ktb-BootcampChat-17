@@ -44,7 +44,9 @@ public class RedissonConfig {
                 .addNodeAddress("redis://" + slaveHost2 + ":" + slavePort)
                 .setDatabase(0)
                 .setMasterConnectionPoolSize(16)
+                .setMasterConnectionMinimumIdleSize(4)
                 .setSlaveConnectionPoolSize(16)
+                .setSlaveConnectionMinimumIdleSize(4)
                 .setScanInterval(2000);
 
         config.setThreads(threads);
