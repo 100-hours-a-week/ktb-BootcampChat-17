@@ -37,17 +37,19 @@ jobs:
           docker tag chat-app-frontend ${{ secrets.DOCKERHUB_USERNAME }}/chat-app-frontend:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/chat-app-frontend:latest
 
-
   deploy:
     name: Deploy to EC2 (Parallel)
-    needs: build-and-push
+    needs: [build-backend, build-frontend]
     runs-on: ubuntu-latest
 
-    # 🔥 여러 EC2를 병렬로 처리
+    # 🔥 먼저 EC2 리스트를 env로 변환
+    env:
+      EC2_LIST: ${{ secrets.EC2_DEPLOY_TARGETS }}
+
     strategy:
       fail-fast: false
       matrix:
-        server: ${{ fromJson(secrets.EC2_DEPLOY_TARGETS) }}
+        server: ${{ fromJson(env.EC2_LIST) }}
 
     steps:
       - name: Deploy to EC2 via SSH
