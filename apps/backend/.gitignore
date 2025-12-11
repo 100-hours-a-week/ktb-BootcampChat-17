@@ -2,3 +2,5 @@ uploads/*
 # Environment variables
 .env
 *.env
+
+application.properties
