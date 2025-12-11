@@ -1,7 +1,7 @@
 name: CI/CD Deploy
 
 on:
-  push:        # 🔥 모든 브랜치 push 시 실행됨
+  push:        # 모든 브랜치 push 시 실행
     branches:
       - '**'
 
@@ -21,7 +21,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 2) Backend Docker 이미지 빌드 & Push
+      # 2) Backend Docker 빌드 & Push
       - name: Build Backend image
         run: |
           cd apps/backend
@@ -29,7 +29,7 @@ jobs:
           docker tag chat-app-backend ${{ secrets.DOCKERHUB_USERNAME }}/chat-app-backend:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/chat-app-backend:latest
 
-      # 3) Frontend Docker 이미지 빌드 & Push
+      # 3) Frontend Docker 빌드 & Push
       - name: Build Frontend image
         run: |
           cd apps/frontend
@@ -37,28 +37,47 @@ jobs:
           docker tag chat-app-frontend ${{ secrets.DOCKERHUB_USERNAME }}/chat-app-frontend:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/chat-app-frontend:latest
 
+
   deploy:
-    name: Deploy to EC2 (Parallel)
-    needs: [build-backend, build-frontend]
+    name: Deploy to EC2 servers
+    needs: build-and-push
     runs-on: ubuntu-latest
 
-    # 🔥 먼저 EC2 리스트를 env로 변환
-    env:
-      EC2_LIST: ${{ secrets.EC2_DEPLOY_TARGETS }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        server: ${{ fromJson(env.EC2_LIST) }}
-
     steps:
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ matrix.server }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd /home/ubuntu
-            docker compose pull
-            docker compose up -d --remove-orphans
+      - name: Setup SSH Key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+      - name: Deploy to Servers using SSH + docker compose
+        env:
+          SERVERS: ${{ secrets.EC2_DEPLOY_TARGETS }}   # JSON 배열
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          set -e
+
+          echo "Deploying to all servers..."
+
+          for server in $(echo "$SERVERS" | jq -r '.[]'); do
+            echo "-------------------------------------"
+            echo "Deploying to $server"
+            echo "-------------------------------------"
+
+            ssh -i private_key.pem -o StrictHostKeyChecking=no ubuntu@"$server" bash -s <<EOF
+              set -e
+              cd /home/ubuntu
+
+              echo "Pulling latest Docker images..."
+              sudo docker compose pull
+
+              echo "Restarting services..."
+              sudo docker compose up -d --remove-orphans
+
+              echo "Deployment finished on $server"
+EOF
+
+          done
+
+          echo "-------------------------------------"
+          echo "All servers deployed successfully!"
+          echo "-------------------------------------"
