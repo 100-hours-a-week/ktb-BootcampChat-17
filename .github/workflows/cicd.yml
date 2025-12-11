@@ -1,0 +1,62 @@
+name: CI/CD Deploy
+
+on:
+  push:        # 🔥 모든 브랜치 push 시 실행됨
+    branches:
+      - '**'
+
+jobs:
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 1) Docker Hub 로그인
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 2) Backend Docker 이미지 빌드 & Push
+      - name: Build Backend image
+        run: |
+          cd apps/backend
+          docker build -t chat-app-backend .
+          docker tag chat-app-backend ${{ secrets.DOCKERHUB_USERNAME }}/chat-app-backend:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/chat-app-backend:latest
+
+      # 3) Frontend Docker 이미지 빌드 & Push
+      - name: Build Frontend image
+        run: |
+          cd apps/frontend
+          docker build -t chat-app-frontend .
+          docker tag chat-app-frontend ${{ secrets.DOCKERHUB_USERNAME }}/chat-app-frontend:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/chat-app-frontend:latest
+
+
+  deploy:
+    name: Deploy to EC2 (Parallel)
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    # 🔥 여러 EC2를 병렬로 처리
+    strategy:
+      fail-fast: false
+      matrix:
+        server: ${{ fromJson(secrets.EC2_DEPLOY_TARGETS) }}
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ matrix.server }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu
+            docker compose pull
+            docker compose up -d --remove-orphans
