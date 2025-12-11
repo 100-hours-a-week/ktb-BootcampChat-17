@@ -34,6 +34,7 @@ public class SecurityConfig {
             "https://chat.goorm-ktb-017.goorm.team/",
             "http://localhost:3000/"
     );
+
     private static final List<String> CORS_ALLOWED_HEADERS = List.of(
             "Content-Type",
             "Authorization",
