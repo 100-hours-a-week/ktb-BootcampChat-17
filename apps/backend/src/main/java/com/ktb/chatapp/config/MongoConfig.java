@@ -20,6 +20,7 @@ import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 
 import java.util.concurrent.TimeUnit;
+// 테스트 주석입니다
 
 @Configuration
 @EnableMongoAuditing

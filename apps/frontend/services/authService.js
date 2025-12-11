@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+// 테스트 주석입니다
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // axios 인스턴스 생성
