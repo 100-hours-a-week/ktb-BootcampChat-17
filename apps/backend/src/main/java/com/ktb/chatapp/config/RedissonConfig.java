@@ -38,9 +38,9 @@ public class RedissonConfig {
         Config config = new Config();
 
         ReplicatedServersConfig replicated = config.useReplicatedServers()
-                .addNodeAddress("redis://" + masterHost + ":" + masterPort)
-                .addNodeAddress("redis://" + slaveHost + ":" + slavePort)
-                .addNodeAddress("redis://" + slaveHost2 + ":" + slavePort)
+                .addNodeAddress("redis://43.201.34.87:6379" )
+                .addNodeAddress("redis://43.203.193.52:6379")
+                .addNodeAddress("redis://3.34.50.68:6379")
                 .setDatabase(0)
                 .setMasterConnectionPoolSize(16)
                 .setMasterConnectionMinimumIdleSize(4)
