@@ -21,6 +21,9 @@ public class RedissonConfig {
     @Value("${REDIS_SLAVE_HOST}")
     private String slaveHost;
 
+    @Value("${REDIS_SLAVE_HOST2}")
+    private String slaveHost2;
+
     @Value("${REDIS_SLAVE_PORT}")
     private int slavePort;
 
@@ -38,7 +41,7 @@ public class RedissonConfig {
         ReplicatedServersConfig replicated = config.useReplicatedServers()
                 .addNodeAddress("redis://" + masterHost + ":" + masterPort)
                 .addNodeAddress("redis://" + slaveHost + ":" + slavePort)
-                .addNodeAddress("redis://" + slaveHost + ":" + slavePort)
+                .addNodeAddress("redis://" + slaveHost2 + ":" + slavePort)
                 .setDatabase(0)
                 .setMasterConnectionPoolSize(64)
                 .setSlaveConnectionPoolSize(64)
