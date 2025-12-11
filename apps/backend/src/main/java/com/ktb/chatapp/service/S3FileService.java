@@ -35,6 +35,8 @@ public class S3FileService implements FileService {
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
+    @Value("${cloud.aws.cloud-front-domain}")
+    private String cloudFront;
 
     public S3FileService(AmazonS3 amazonS3,
                          FileRepository fileRepository,
@@ -129,7 +131,7 @@ public class S3FileService implements FileService {
             log.info("S3 파일 저장 완료: {}", key);
 
             // URL 반환
-            return "https://d2dndgtcx55jwp.cloudfront.net/" + key;
+            return cloudFront + key;
 
         } catch (IOException e) {
             log.error("파일 저장 실패: {}", e.getMessage(), e);
