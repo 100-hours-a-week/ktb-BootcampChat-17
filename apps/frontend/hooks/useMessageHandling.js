@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Toast } from '../components/Toast';
 import fileService from '../services/fileService';
 
@@ -13,7 +13,20 @@ export const useMessageHandling = (socketRef, currentUser, router, handleSession
  const [uploadProgress, setUploadProgress] = useState(0);
  const [uploadError, setUploadError] = useState(null);
 
+ const isComposingRef = useRef(false);
+ const handleCompositionStart = useCallback(() => {
+     isComposingRef.current = true;
+ }, []);
+
+ const handleCompositionEnd = useCallback((e) => {
+     isComposingRef.current = false;
+     setMessage(e.target.value);
+ }, []);
+
  const handleMessageChange = useCallback((e) => {
+   if (isComposingRef.current) {
+       return;
+   }
    const newValue = e.target.value;
    setMessage(newValue);
 
@@ -201,6 +214,8 @@ export const useMessageHandling = (socketRef, currentUser, router, handleSession
    setMentionIndex,
    setFilePreview,
    handleMessageChange,
+   handleCompositionStart,
+   handleCompositionEnd,
    handleMessageSubmit,
    handleEmojiToggle,
    handleLoadMore,
