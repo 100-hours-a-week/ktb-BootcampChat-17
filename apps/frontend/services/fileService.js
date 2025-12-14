@@ -233,26 +233,32 @@ class FileService {
   getFileUrl(filename, forPreview = false) {
     if (!filename) return '';
 
+    if (forPreview) {
+      return `${process.env.NEXT_PUBLIC_CLOUDFRONT_URL}/${filename}`;
+    }
+
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-    const endpoint = forPreview ? 'view' : 'download';
-    return `${baseUrl}/api/files/${endpoint}/${filename}`;
+    return `${baseUrl}/api/files/download/${filename}`;
   }
 
   getPreviewUrl(file, token, sessionId, withAuth = true) {
     if (!file?.filename) return '';
 
-    const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/files/view/${file.filename}`;
+    // const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/files/view/${file.filename}`;
 
-    if (!withAuth) return baseUrl;
+    // if (!withAuth) return baseUrl;
 
-    if (!token || !sessionId) return baseUrl;
+    // if (!token || !sessionId) return baseUrl;
 
-    // URL 객체 생성 전 프로토콜 확인
-    const url = new URL(baseUrl);
-    url.searchParams.append('token', encodeURIComponent(token));
-    url.searchParams.append('sessionId', encodeURIComponent(sessionId));
+    // // URL 객체 생성 전 프로토콜 확인
+    // const url = new URL(baseUrl);
+    // url.searchParams.append('token', encodeURIComponent(token));
+    // url.searchParams.append('sessionId', encodeURIComponent(sessionId));
 
-    return url.toString();
+    // return url.toString();
+
+    const baseUrl = `${process.env.NEXT_PUBLIC_CLOUDFRONT_URL}/${file.filename}`;
+    return baseUrl;
   }
 
   getFileType(filename) {
