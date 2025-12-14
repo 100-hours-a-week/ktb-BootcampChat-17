@@ -42,6 +42,8 @@ const ChatInput = forwardRef(({
   const [uploadError, setUploadError] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
+  const isComposingRef = useRef(false);
+
 
   const handleFileValidationAndPreview = useCallback(async (file) => {
     if (!file) return;
@@ -293,6 +295,10 @@ const ChatInput = forwardRef(({
   }, [message, setMessage, setShowMentionList, messageInputRef]);
 
   const handleKeyDown = useCallback((e) => {
+    if (isComposingRef.current || e.nativeEvent.isComposing) {
+      return;
+    }
+
     if (showMentionList) {
       const participants = getFilteredParticipants(room); // room 객체 전달
       const participantsCount = participants.length;
@@ -427,6 +433,13 @@ const ChatInput = forwardRef(({
                   value={message}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
+                  onCompositionStart={() => {
+                    isComposingRef.current = true;
+                  }}
+                  onCompositionEnd={(e) => {
+                    isComposingRef.current = false;
+                    onMessageChange(e); // 조합 끝난 최종 값 반영
+                  }}
                   placeholder={isDragging ? "파일을 여기에 놓아주세요." : "메시지를 입력하세요... (@를 입력하여 멘션, Shift + Enter로 줄바꿈)"}
                   disabled={isDisabled}
                   rows={1}
