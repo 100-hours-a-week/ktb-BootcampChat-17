@@ -17,8 +17,6 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
       - '--storage.tsdb.retention.time=30d'
-    networks:
-      - monitoring
     deploy:
       resources:
         limits:
@@ -53,8 +51,6 @@ services:
     depends_on:
       prometheus:
         condition: service_healthy
-    networks:
-      - monitoring
     deploy:
       resources:
         limits:
@@ -72,8 +68,6 @@ services:
 
 volumes:
   prometheus_data:
+    name: prometheus_data
   grafana_data:
-
-networks:
-  monitoring:
-    driver: bridge
+    name: grafana_data

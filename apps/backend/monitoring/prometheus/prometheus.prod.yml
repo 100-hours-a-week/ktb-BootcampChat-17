@@ -11,24 +11,19 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'spring-boot-app'
-    metrics_path: '/actuator/prometheus'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['IP:PORT']
-        labels:
-          application: 'ktb-chat-backend'
-          environment: 'production'
-
   - job_name: 'mongodb'
     static_configs:
-      - targets: ['IP:PORT']
+      - targets: [
+          '10.0.101.247:9216'
+        ]
         labels:
           environment: 'production'
 
   - job_name: 'redis'
     static_configs:
-      - targets: ['IP:PORT']
+      - targets: [
+          '10.0.101.247:9121'
+        ]
         labels:
           environment: 'production'
 
